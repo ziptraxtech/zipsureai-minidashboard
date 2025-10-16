@@ -1,7 +1,5 @@
 import React from 'react';
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -27,18 +25,6 @@ const ChartsComponent: React.FC = () => {
     { name: 'Offline', value: 1, color: '#6B7280' }
   ];
 
-  // Device cost data
-  const costData = [
-    { name: 'Device 1', cost: 385, status: 'Critical' },
-    { name: 'Device 2', cost: 250, status: 'Excellent' },
-    { name: 'Device 3', cost: 180, status: 'Good' },
-    { name: 'Device 4', cost: 420, status: 'Critical' },
-    { name: 'Device 5', cost: 0, status: 'Offline' },
-    { name: 'Device 6', cost: 320, status: 'Good' },
-    { name: 'Device 7', cost: 150, status: 'Excellent' },
-    { name: 'Device 8', cost: 290, status: 'Good' }
-  ];
-
   // Usage trend data (mock data for demonstration)
   const usageData = [
     { time: '6AM', usage: 12, efficiency: 85 },
@@ -59,14 +45,6 @@ const ChartsComponent: React.FC = () => {
     { month: 'May', energy: 4800 },
     { month: 'Jun', energy: 3800 }
   ];
-
-  const getCostColor = (cost: number) => {
-    if (cost >= 400) return '#EF4444'; // High cost - red
-    if (cost >= 300) return '#F59E0B'; // Medium cost - amber
-    if (cost >= 200) return '#3B82F6'; // Low cost - blue
-    if (cost > 0) return '#10B981';    // Very low cost - green
-    return '#6B7280'; // Offline - gray
-  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
