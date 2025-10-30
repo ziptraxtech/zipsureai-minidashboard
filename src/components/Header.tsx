@@ -1,5 +1,5 @@
 import React from 'react';
-import { Zap, Settings, Bell } from 'lucide-react';
+import { Zap, Settings, Bell, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Header: React.FC = () => {
@@ -67,7 +67,7 @@ const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile Menu Button */}
+        {/* Mobile-only quick actions */}
         <div className="md:hidden mt-4">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20">
@@ -83,6 +83,15 @@ const Header: React.FC = () => {
               <div className="text-xs text-blue-100">Offline</div>
             </div>
           </div>
+
+          {/* Mobile-only Reports button */}
+          <Link
+            to="/ev-stations"
+            className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-3 border border-white/20 shadow-lg shadow-cyan-500/30 transition-colors"
+          >
+            <BarChart3 size={18} />
+            <span>View Reports</span>
+          </Link>
         </div>
       </div>
     </header>
