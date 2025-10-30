@@ -1,8 +1,9 @@
-import React from 'react';
-import { Zap, Settings, Bell, BarChart3 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Zap, Settings, Bell, MoreVertical } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Header: React.FC = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   return (
     <header className="zipsure-gradient shadow-xl border-b border-blue-600/20">
       <div className="container mx-auto px-6 py-4">
@@ -20,7 +21,7 @@ const Header: React.FC = () => {
             </div>
           </div>
 
-          {/* Navigation Links */}
+          {/* Navigation Links (desktop) */}
           <nav className="hidden lg:flex items-center space-x-8">
             <Link to="/" className="text-white/90 hover:text-white transition-colors duration-200 font-medium">
               Dashboard
@@ -65,6 +66,16 @@ const Header: React.FC = () => {
               </button>
             </div>
           </div>
+          {/* Mobile kebab menu trigger */}
+          <div className="md:hidden">
+            <button
+              aria-label="Open menu"
+              className="p-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 border border-white/10"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              <MoreVertical size={22} />
+            </button>
+          </div>
         </div>
 
         {/* Mobile-only quick actions */}
@@ -83,15 +94,41 @@ const Header: React.FC = () => {
               <div className="text-xs text-blue-100">Offline</div>
             </div>
           </div>
-
-          {/* Mobile-only Reports button */}
-          <Link
-            to="/ev-stations"
-            className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-3 border border-white/20 shadow-lg shadow-cyan-500/30 transition-colors"
-          >
-            <BarChart3 size={18} />
-            <span>View Reports</span>
-          </Link>
+          {/* Mobile dropdown nav */}
+          {mobileMenuOpen && (
+            <div className="mt-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 shadow-xl overflow-hidden">
+              <div className="divide-y divide-white/10">
+                <Link
+                  to="/"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-3 text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  Dashboard
+                </Link>
+                <a
+                  href="#analytics"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-3 text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  Analytics
+                </a>
+                <Link
+                  to="/ev-stations"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-3 text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  Reports
+                </Link>
+                <a
+                  href="#settings"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-3 text-white/90 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  Settings
+                </a>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>
