@@ -26,7 +26,8 @@ import {
   Settings,
   Download,
   Share2,
-  Calendar
+  Calendar,
+  Lock
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -271,13 +272,35 @@ const BatteryReport: React.FC = () => {
     return <AlertTriangle className="text-red-600" size={20} />;
   };
 
+  // Dial (SOH) metrics
+  const sohValue = Math.max(0, Math.min(100, Number(report.gaugeValue) || 0));
+  const dialSize = 160;
+  const dialStroke = 14;
+  const dialCenter = dialSize / 2;
+  const dialRadius = dialCenter - dialStroke / 2;
+  const dialCircumference = 2 * Math.PI * dialRadius;
+  const dialProgress = sohValue / 100;
+  const dialOffset = dialCircumference * (1 - dialProgress);
+
 
   const handleExportPDF = async () => {
     if (!reportRef.current || exporting) return;
     try {
       setExporting(true);
-      // Add a white background to avoid transparent PDF
+      // Temporarily disable blur and overlays for clean PDF capture
       const element = reportRef.current;
+      element.setAttribute('data-exporting', 'true');
+      const tempStyle = document.createElement('style');
+      tempStyle.setAttribute('data-export-style', 'true');
+      tempStyle.textContent = `
+        [data-exporting="true"] .blur-sm { filter: none !important; }
+        [data-exporting="true"] [data-paywall-overlay] { display: none !important; }
+      `;
+      document.head.appendChild(tempStyle);
+      // Wait a frame for styles to apply
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+      // Add a white background to avoid transparent PDF
       const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
       const imgData = canvas.toDataURL('image/png');
 
@@ -311,6 +334,11 @@ const BatteryReport: React.FC = () => {
       console.error('PDF export failed:', e);
       alert('Failed to export PDF. Please try again.');
     } finally {
+      // Restore page state
+      const element = reportRef.current;
+      if (element) element.removeAttribute('data-exporting');
+      const styleEl = document.querySelector('style[data-export-style="true"]');
+      if (styleEl && styleEl.parentNode) styleEl.parentNode.removeChild(styleEl);
       setExporting(false);
     }
   };
@@ -368,20 +396,68 @@ const BatteryReport: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="text-right">
-              <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(report.gaugeValue)}`}>
-                {getStatusIcon(report.gaugeValue)}
-                <span className="ml-2">
-                  {report.gaugeValue >= 85 ? 'Excellent' : report.gaugeValue >= 70 ? 'Good' : 'Needs Attention'}
-                </span>
+            {/* Paywalled: Status + Overall Health */}
+            <div className="relative text-right w-56">
+              <div className="pointer-events-none select-none blur-sm">
+                <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(report.gaugeValue)}`}>
+                  {getStatusIcon(report.gaugeValue)}
+                  <span className="ml-2">
+                    {report.gaugeValue >= 85 ? 'Excellent' : report.gaugeValue >= 70 ? 'Good' : 'Needs Attention'}
+                  </span>
+                </div>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{report.gaugeValue}%</p>
+                <p className="text-gray-600">Overall Health</p>
               </div>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{report.gaugeValue}%</p>
-              <p className="text-gray-600">Overall Health</p>
+              {/* Overlay removed per request; keeping blurred preview without call-to-action */}
             </div>
           </div>
 
           {/* Key Metrics Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* SOH Dial */}
+            <div className="bg-white rounded-xl p-4 border border-gray-200 flex items-center justify-center md:col-span-2">
+              <div className="flex items-center gap-6">
+                <svg width={dialSize} height={dialSize} viewBox={`0 0 ${dialSize} ${dialSize}`} role="img" aria-label={`Battery State of Health ${sohValue}%`}>
+                  <defs>
+                    <linearGradient id="sohGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#06b6d4"/>
+                      <stop offset="50%" stopColor="#22c55e"/>
+                      <stop offset="75%" stopColor="#f59e0b"/>
+                      <stop offset="100%" stopColor="#ef4444"/>
+                    </linearGradient>
+                  </defs>
+                  {/* Track */}
+                  <circle
+                    cx={dialCenter}
+                    cy={dialCenter}
+                    r={dialRadius}
+                    stroke="#e5e7eb"
+                    strokeWidth={dialStroke}
+                    fill="none"
+                  />
+                  {/* Progress */}
+                  <circle
+                    cx={dialCenter}
+                    cy={dialCenter}
+                    r={dialRadius}
+                    stroke="url(#sohGradient)"
+                    strokeWidth={dialStroke}
+                    strokeLinecap="round"
+                    fill="none"
+                    strokeDasharray={dialCircumference}
+                    strokeDashoffset={dialOffset}
+                    transform={`rotate(-90 ${dialCenter} ${dialCenter})`}
+                  />
+                </svg>
+                <div className="text-center">
+                  <div className="text-sm text-gray-600 font-medium">Battery SOH</div>
+                  <div className="text-4xl font-extrabold bg-gradient-to-r from-cyan-500 via-emerald-500 to-orange-500 bg-clip-text text-transparent">
+                    {sohValue}%
+                  </div>
+                  <div className="text-xs text-gray-500">State of Health</div>
+                </div>
+              </div>
+            </div>
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
               <div className="flex items-center justify-between mb-2">
                 <Zap className="text-blue-600" size={20} />
@@ -489,12 +565,30 @@ const BatteryReport: React.FC = () => {
               <Shield className="mr-2 text-blue-600" size={20} />
               Technical Analysis
             </h3>
-            <div className="space-y-4">
-              {report.observations.map((obs: string, index: number) => (
-                <div key={index} className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-                  <p className="text-gray-700 leading-relaxed">{obs}</p>
+            <div className="relative">
+              <div className="space-y-4 pointer-events-none select-none blur-sm">
+                {report.observations.map((obs: string, index: number) => (
+                  <div key={index} className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                    <p className="text-gray-700 leading-relaxed">{obs}</p>
+                  </div>
+                ))}
+              </div>
+              <div data-paywall-overlay className="absolute inset-0 flex items-center justify-center">
+                <div className="bg-white/85 backdrop-blur-md rounded-xl p-4 border border-gray-200 shadow-lg text-center">
+                  <div className="flex items-center justify-center text-gray-800">
+                    <Lock size={16} className="mr-2" />
+                    <span className="text-sm font-semibold">Get the AI-generated report</span>
+                  </div>
+                  <button
+                    className="mt-2 inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-semibold py-2 px-3 transition-colors"
+                    type="button"
+                  >
+                    <Lock size={14} />
+                    Unlock AI-powered report
+                  </button>
+                  <p className="mt-1 text-xs text-gray-600">Professional ML models analyze your data</p>
                 </div>
-              ))}
+              </div>
             </div>
           </div>
 
@@ -503,24 +597,43 @@ const BatteryReport: React.FC = () => {
               <CheckCircle className="mr-2 text-green-600" size={20} />
               Professional Verdict
             </h3>
-            <div className={`p-6 rounded-xl border-l-4 ${
-              report.gaugeValue >= 85 ? 'bg-green-50 border-green-500' :
-              report.gaugeValue >= 70 ? 'bg-yellow-50 border-yellow-500' :
-              'bg-red-50 border-red-500'
-            }`}>
-              <div className="flex items-start space-x-3">
-                {getStatusIcon(report.gaugeValue)}
-                <div>
-                  <h4 className={`font-semibold mb-2 ${
-                    report.gaugeValue >= 85 ? 'text-green-800' :
-                    report.gaugeValue >= 70 ? 'text-yellow-800' :
-                    'text-red-800'
-                  }`}>
-                    {report.gaugeValue >= 85 ? 'Optimal Performance' :
-                     report.gaugeValue >= 70 ? 'Monitoring Required' :
-                     'Immediate Action Needed'}
-                  </h4>
-                  <p className="text-gray-700 leading-relaxed">{report.verdict}</p>
+            {/* Paywalled verdict content */}
+            <div className="relative">
+              <div className={`p-6 rounded-xl border-l-4 pointer-events-none select-none blur-sm ${
+                report.gaugeValue >= 85 ? 'bg-green-50 border-green-500' :
+                report.gaugeValue >= 70 ? 'bg-yellow-50 border-yellow-500' :
+                'bg-red-50 border-red-500'
+              }`}>
+                <div className="flex items-start space-x-3">
+                  {getStatusIcon(report.gaugeValue)}
+                  <div>
+                    <h4 className={`font-semibold mb-2 ${
+                      report.gaugeValue >= 85 ? 'text-green-800' :
+                      report.gaugeValue >= 70 ? 'text-yellow-800' :
+                      'text-red-800'
+                    }`}>
+                      {report.gaugeValue >= 85 ? 'Optimal Performance' :
+                       report.gaugeValue >= 70 ? 'Monitoring Required' :
+                       'Immediate Action Needed'}
+                    </h4>
+                    <p className="text-gray-700 leading-relaxed">{report.verdict}</p>
+                  </div>
+                </div>
+              </div>
+              <div data-paywall-overlay className="absolute inset-0 flex items-center justify-center">
+                <div className="bg-white/85 backdrop-blur-md rounded-xl p-4 border border-gray-200 shadow-lg text-center">
+                  <div className="flex items-center justify-center text-gray-800">
+                    <Lock size={16} className="mr-2" />
+                    <span className="text-sm font-semibold">Get the AI-generated report</span>
+                  </div>
+                  <button
+                    className="mt-2 inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-semibold py-2 px-3 transition-colors"
+                    type="button"
+                  >
+                    <Lock size={14} />
+                    Unlock AI-powered report
+                  </button>
+                  <p className="mt-1 text-xs text-gray-600">Professional ML models analyze your data</p>
                 </div>
               </div>
             </div>
@@ -533,30 +646,48 @@ const BatteryReport: React.FC = () => {
             <Clock className="mr-2 text-purple-600" size={20} />
             Recommended Actions
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-4 bg-green-50 rounded-xl border border-green-200">
-              <h4 className="font-semibold text-green-800 mb-2">Immediate (0-30 days)</h4>
-              <ul className="text-sm text-green-700 space-y-1">
-                <li>• Continue regular monitoring</li>
-                <li>• Check thermal management</li>
-                <li>• Verify charge cycles</li>
-              </ul>
+          <div className="relative">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pointer-events-none select-none blur-sm">
+              <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+                <h4 className="font-semibold text-green-800 mb-2">Immediate (0-30 days)</h4>
+                <ul className="text-sm text-green-700 space-y-1">
+                  <li>• Continue regular monitoring</li>
+                  <li>• Check thermal management</li>
+                  <li>• Verify charge cycles</li>
+                </ul>
+              </div>
+              <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-200">
+                <h4 className="font-semibold text-yellow-800 mb-2">Short Term (1-3 months)</h4>
+                <ul className="text-sm text-yellow-700 space-y-1">
+                  <li>• Schedule detailed inspection</li>
+                  <li>• Consider cell balancing</li>
+                  <li>• Review usage patterns</li>
+                </ul>
+              </div>
+              <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
+                <h4 className="font-semibold text-blue-800 mb-2">Long Term (3-6 months)</h4>
+                <ul className="text-sm text-blue-700 space-y-1">
+                  <li>• Plan preventive maintenance</li>
+                  <li>• Assess replacement timeline</li>
+                  <li>• Update monitoring protocols</li>
+                </ul>
+              </div>
             </div>
-            <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-200">
-              <h4 className="font-semibold text-yellow-800 mb-2">Short Term (1-3 months)</h4>
-              <ul className="text-sm text-yellow-700 space-y-1">
-                <li>• Schedule detailed inspection</li>
-                <li>• Consider cell balancing</li>
-                <li>• Review usage patterns</li>
-              </ul>
-            </div>
-            <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
-              <h4 className="font-semibold text-blue-800 mb-2">Long Term (3-6 months)</h4>
-              <ul className="text-sm text-blue-700 space-y-1">
-                <li>• Plan preventive maintenance</li>
-                <li>• Assess replacement timeline</li>
-                <li>• Update monitoring protocols</li>
-              </ul>
+            <div data-paywall-overlay className="absolute inset-0 flex items-center justify-center">
+              <div className="bg-white/85 backdrop-blur-md rounded-xl p-4 border border-gray-200 shadow-lg text-center">
+                <div className="flex items-center justify-center text-gray-800">
+                  <Lock size={16} className="mr-2" />
+                  <span className="text-sm font-semibold">Get the AI-generated report</span>
+                </div>
+                <button
+                  className="mt-2 inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-semibold py-2 px-3 transition-colors"
+                  type="button"
+                >
+                  <Lock size={14} />
+                  Unlock AI-powered report
+                </button>
+                <p className="mt-1 text-xs text-gray-600">Professional ML models analyze your data</p>
+              </div>
             </div>
           </div>
         </div>
