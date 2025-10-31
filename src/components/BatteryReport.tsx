@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
   BarChart, 
@@ -28,6 +28,8 @@ import {
   Share2,
   Calendar
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const deviceReports: Record<string, any> = {
   '1': {
@@ -220,6 +222,10 @@ const BatteryReport: React.FC = () => {
   const { deviceId } = useParams<{ deviceId: string }>();
   const report = deviceReports[deviceId || ''];
 
+  // Hooks must be declared before any conditional returns
+  const [exporting, setExporting] = useState(false);
+  const reportRef = useRef<HTMLDivElement | null>(null);
+
   if (!report) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -265,6 +271,50 @@ const BatteryReport: React.FC = () => {
     return <AlertTriangle className="text-red-600" size={20} />;
   };
 
+
+  const handleExportPDF = async () => {
+    if (!reportRef.current || exporting) return;
+    try {
+      setExporting(true);
+      // Add a white background to avoid transparent PDF
+      const element = reportRef.current;
+      const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+      const imgData = canvas.toDataURL('image/png');
+
+      // Create PDF with A4 portrait
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      // Calculate image dimensions to fit width and paginate height if needed
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width; 
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // First page
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      // Additional pages
+      while (heightLeft > 0) {
+        pdf.addPage();
+        position = heightLeft - imgHeight; // shift up remaining image
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const fileName = `${report?.name?.replace(/\s+/g, '_') || 'Battery'}_Report_${new Date().toISOString().slice(0,10)}.pdf`;
+      pdf.save(fileName);
+    } catch (e) {
+      console.error('PDF export failed:', e);
+      alert('Failed to export PDF. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       {/* Header */}
@@ -283,9 +333,14 @@ const BatteryReport: React.FC = () => {
               <h1 className="text-2xl font-bold text-gray-900">Battery Performance Report</h1>
             </div>
             <div className="flex items-center space-x-3">
-              <button className="flex items-center px-3 py-2 text-gray-600 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100">
+              <button
+                onClick={handleExportPDF}
+                disabled={exporting}
+                className={`flex items-center px-3 py-2 rounded-lg transition-colors hover:bg-gray-100 ${exporting ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-blue-600'}`}
+                aria-busy={exporting}
+              >
                 <Download className="mr-2" size={16} />
-                Export PDF
+                {exporting ? 'Exporting…' : 'Export PDF'}
               </button>
               <button className="flex items-center px-3 py-2 text-gray-600 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100">
                 <Share2 className="mr-2" size={16} />
@@ -296,7 +351,7 @@ const BatteryReport: React.FC = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-8">
+      <div ref={reportRef} className="container mx-auto px-6 py-8">
         {/* Device Overview Card */}
         <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
           <div className="flex items-start justify-between mb-6">
