@@ -4,12 +4,14 @@ import Dashboard from './components/Dashboard';
 import BatteryReport from './components/BatteryReport';
 import EVChargingStations from './components/EVChargingStations';
 import ErrorBoundary from './components/ErrorBoundary';
+import ScrollToTop from './components/ScrollToTop';
 import './index.css';
 
 function App() {
   return (
     <ErrorBoundary>
       <Router>
+        <ScrollToTop />
         <div className="App">
           <Routes>
             <Route path="/" element={<Dashboard />} />

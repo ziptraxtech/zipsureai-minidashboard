@@ -300,8 +300,17 @@ const BatteryReport: React.FC = () => {
       // Wait a frame for styles to apply
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
+      // Choose a conservative scale on mobile to avoid memory issues
+      const isNarrow = window.innerWidth < 640;
+      const scale = isNarrow ? 1.25 : Math.min(2, window.devicePixelRatio || 1.5);
       // Add a white background to avoid transparent PDF
-      const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+      const canvas = await html2canvas(element, {
+        scale,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        scrollY: -window.scrollY,
+        logging: false
+      });
       const imgData = canvas.toDataURL('image/png');
 
       // Create PDF with A4 portrait
@@ -348,8 +357,8 @@ const BatteryReport: React.FC = () => {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
               <Link 
                 to="/" 
                 className="flex items-center px-3 py-2 text-gray-600 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
@@ -358,21 +367,25 @@ const BatteryReport: React.FC = () => {
                 Dashboard
               </Link>
               <div className="h-6 w-px bg-gray-300"></div>
-              <h1 className="text-2xl font-bold text-gray-900">Battery Performance Report</h1>
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate max-w-[70vw] sm:max-w-none">Battery Performance Report</h1>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 sm:space-x-3 self-start sm:self-auto">
               <button
                 onClick={handleExportPDF}
                 disabled={exporting}
-                className={`flex items-center px-3 py-2 rounded-lg transition-colors hover:bg-gray-100 ${exporting ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-blue-600'}`}
+                aria-label={exporting ? 'Exporting PDF' : 'Export PDF'}
+                className={`flex items-center px-2 sm:px-3 py-2 rounded-lg transition-colors hover:bg-gray-100 ${exporting ? 'text-gray-400 cursor-not-allowed' : 'text-gray-600 hover:text-blue-600'}`}
                 aria-busy={exporting}
               >
-                <Download className="mr-2" size={16} />
-                {exporting ? 'Exporting…' : 'Export PDF'}
+                <Download className="sm:mr-2" size={18} />
+                <span className="hidden sm:inline">{exporting ? 'Exporting…' : 'Export PDF'}</span>
               </button>
-              <button className="flex items-center px-3 py-2 text-gray-600 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100">
-                <Share2 className="mr-2" size={16} />
-                Share
+              <button
+                aria-label="Share"
+                className="flex items-center px-2 sm:px-3 py-2 text-gray-600 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
+              >
+                <Share2 className="sm:mr-2" size={18} />
+                <span className="hidden sm:inline">Share</span>
               </button>
             </div>
           </div>
