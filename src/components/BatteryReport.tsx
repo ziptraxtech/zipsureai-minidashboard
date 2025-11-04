@@ -295,21 +295,35 @@ const BatteryReport: React.FC = () => {
       tempStyle.textContent = `
         [data-exporting="true"] .blur-sm { filter: none !important; }
         [data-exporting="true"] [data-paywall-overlay] { display: none !important; }
+        /* Prevent sticky/overflow issues during capture */
+        [data-exporting="true"] * { -webkit-overflow-scrolling: auto !important; }
       `;
       document.head.appendChild(tempStyle);
       // Wait a frame for styles to apply
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
+      // Ensure page is at the top for full, consistent capture
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+
+      // Basic mobile detection for safer export behavior
+      const ua = navigator.userAgent || (navigator as any).vendor || '';
+      const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
+      const isAndroid = /Android/.test(ua);
+      const isMobile = isIOS || isAndroid;
+
       // Choose a conservative scale on mobile to avoid memory issues
       const isNarrow = window.innerWidth < 640;
-      const scale = isNarrow ? 1.25 : Math.min(2, window.devicePixelRatio || 1.5);
+      const scale = isMobile ? Math.min(1.5, window.devicePixelRatio || 1) : (isNarrow ? 1.5 : Math.min(2, window.devicePixelRatio || 1.5));
       // Add a white background to avoid transparent PDF
       const canvas = await html2canvas(element, {
         scale,
         backgroundColor: '#ffffff',
         useCORS: true,
+        allowTaint: true,
         scrollY: -window.scrollY,
-        logging: false
+        logging: false,
+        windowWidth: Math.max(document.documentElement.scrollWidth, element.scrollWidth),
+        windowHeight: Math.max(document.documentElement.scrollHeight, element.scrollHeight)
       });
       const imgData = canvas.toDataURL('image/png');
 
@@ -338,7 +352,30 @@ const BatteryReport: React.FC = () => {
       }
 
       const fileName = `${report?.name?.replace(/\s+/g, '_') || 'Battery'}_Report_${new Date().toISOString().slice(0,10)}.pdf`;
-      pdf.save(fileName);
+
+      if (isMobile) {
+        // On many mobile browsers the download attribute is ignored; prefer Blob URL or Share API
+        const blob = pdf.output('blob');
+        const blobUrl = URL.createObjectURL(blob);
+        try {
+          const supportsShare = typeof (navigator as any).canShare === 'function' && (navigator as any).canShare({ files: [new File([blob], fileName, { type: 'application/pdf' })] });
+          if ((navigator as any).share && supportsShare) {
+            await (navigator as any).share({
+              title: 'Battery Report',
+              text: 'Battery performance report PDF',
+              files: [new File([blob], fileName, { type: 'application/pdf' })]
+            });
+          } else {
+            // Fallback: open in a new tab so the user can use the browser's share/open in…
+            window.open(blobUrl, '_blank');
+          }
+        } finally {
+          // Revoke after a short delay to allow opening
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000);
+        }
+      } else {
+        pdf.save(fileName);
+      }
     } catch (e) {
       console.error('PDF export failed:', e);
       alert('Failed to export PDF. Please try again.');
@@ -431,14 +468,7 @@ const BatteryReport: React.FC = () => {
             <div className="bg-white rounded-xl p-4 border border-gray-200 flex items-center justify-center md:col-span-2">
               <div className="flex items-center gap-6">
                 <svg width={dialSize} height={dialSize} viewBox={`0 0 ${dialSize} ${dialSize}`} role="img" aria-label={`Battery State of Health ${sohValue}%`}>
-                  <defs>
-                    <linearGradient id="sohGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#06b6d4"/>
-                      <stop offset="50%" stopColor="#22c55e"/>
-                      <stop offset="75%" stopColor="#f59e0b"/>
-                      <stop offset="100%" stopColor="#ef4444"/>
-                    </linearGradient>
-                  </defs>
+                  {/* Monotone stroke for crisp PDF rendering */}
                   {/* Track */}
                   <circle
                     cx={dialCenter}
@@ -453,7 +483,7 @@ const BatteryReport: React.FC = () => {
                     cx={dialCenter}
                     cy={dialCenter}
                     r={dialRadius}
-                    stroke="url(#sohGradient)"
+                    stroke="#06b6d4"
                     strokeWidth={dialStroke}
                     strokeLinecap="round"
                     fill="none"
@@ -464,7 +494,7 @@ const BatteryReport: React.FC = () => {
                 </svg>
                 <div className="text-center">
                   <div className="text-sm text-gray-600 font-medium">Battery SOH</div>
-                  <div className="text-4xl font-extrabold bg-gradient-to-r from-cyan-500 via-emerald-500 to-orange-500 bg-clip-text text-transparent">
+                  <div className="text-4xl font-extrabold text-cyan-600">
                     {sohValue}%
                   </div>
                   <div className="text-xs text-gray-500">State of Health</div>
