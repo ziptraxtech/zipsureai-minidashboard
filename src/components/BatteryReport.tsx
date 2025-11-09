@@ -27,7 +27,8 @@ import {
   Download,
   Share2,
   Calendar,
-  Lock
+  Lock,
+  FileText
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -225,7 +226,9 @@ const BatteryReport: React.FC = () => {
 
   // Hooks must be declared before any conditional returns
   const [exporting, setExporting] = useState(false);
+  const [unlocked] = useState(false); // placeholder (paywall later)
   const reportRef = useRef<HTMLDivElement | null>(null);
+  // No backend integration yet; unlock/paywall will be added later.
 
   if (!report) {
     return (
@@ -287,14 +290,15 @@ const BatteryReport: React.FC = () => {
     if (!reportRef.current || exporting) return;
     try {
       setExporting(true);
-      // Temporarily disable blur and overlays for clean PDF capture
+      // Hide paywalled sections entirely so preview PDF excludes premium content.
       const element = reportRef.current;
       element.setAttribute('data-exporting', 'true');
       const tempStyle = document.createElement('style');
       tempStyle.setAttribute('data-export-style', 'true');
       tempStyle.textContent = `
-        [data-exporting="true"] .blur-sm { filter: none !important; }
+        [data-exporting="true"] [data-paywall-section] { display: none !important; }
         [data-exporting="true"] [data-paywall-overlay] { display: none !important; }
+        [data-exporting="true"] [data-paywall-placeholder] { display: block !important; }
         /* Prevent sticky/overflow issues during capture */
         [data-exporting="true"] * { -webkit-overflow-scrolling: auto !important; }
       `;
@@ -417,6 +421,13 @@ const BatteryReport: React.FC = () => {
                 <Download className="sm:mr-2" size={18} />
                 <span className="hidden sm:inline">{exporting ? 'Exporting…' : 'Export PDF'}</span>
               </button>
+              <Link
+                to={`/report/${deviceId}/ai`}
+                className="flex items-center px-2 sm:px-3 py-2 text-gray-600 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
+              >
+                <FileText className="sm:mr-2" size={18} />
+                <span className="hidden sm:inline">View AI Report</span>
+              </Link>
               <button
                 aria-label="Share"
                 className="flex items-center px-2 sm:px-3 py-2 text-gray-600 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-100"
@@ -448,7 +459,7 @@ const BatteryReport: React.FC = () => {
             </div>
             {/* Paywalled: Status + Overall Health */}
             <div className="relative text-right w-56">
-              <div className="pointer-events-none select-none blur-sm">
+              <div className={`pointer-events-none select-none ${unlocked ? '' : 'blur-sm'}`}> 
                 <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(report.gaugeValue)}`}>
                   {getStatusIcon(report.gaugeValue)}
                   <span className="ml-2">
@@ -601,8 +612,8 @@ const BatteryReport: React.FC = () => {
           </div>
         </div>
 
-        {/* Observations and Analysis */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Observations and Analysis (paywalled) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8" data-paywall-section>
           <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
             <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
               <Shield className="mr-2 text-blue-600" size={20} />
@@ -620,16 +631,16 @@ const BatteryReport: React.FC = () => {
                 <div className="bg-white/85 backdrop-blur-md rounded-xl p-4 border border-gray-200 shadow-lg text-center">
                   <div className="flex items-center justify-center text-gray-800">
                     <Lock size={16} className="mr-2" />
-                    <span className="text-sm font-semibold">Get the AI-generated report</span>
+                    <span className="text-sm font-semibold">AI-generated analysis available</span>
                   </div>
-                  <button
+                  <Link
+                    to={`/report/${deviceId}/ai`}
                     className="mt-2 inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-semibold py-2 px-3 transition-colors"
-                    type="button"
                   >
                     <Lock size={14} />
-                    Unlock AI-powered report
-                  </button>
-                  <p className="mt-1 text-xs text-gray-600">Professional ML models analyze your data</p>
+                    Generate AI Report
+                  </Link>
+                  <p className="mt-1 text-xs text-gray-600">Paywall will be added later</p>
                 </div>
               </div>
             </div>
@@ -640,7 +651,7 @@ const BatteryReport: React.FC = () => {
               <CheckCircle className="mr-2 text-green-600" size={20} />
               Professional Verdict
             </h3>
-            {/* Paywalled verdict content */}
+            {/* Paywalled verdict content (static preview) */}
             <div className="relative">
               <div className={`p-6 rounded-xl border-l-4 pointer-events-none select-none blur-sm ${
                 report.gaugeValue >= 85 ? 'bg-green-50 border-green-500' :
@@ -655,9 +666,7 @@ const BatteryReport: React.FC = () => {
                       report.gaugeValue >= 70 ? 'text-yellow-800' :
                       'text-red-800'
                     }`}>
-                      {report.gaugeValue >= 85 ? 'Optimal Performance' :
-                       report.gaugeValue >= 70 ? 'Monitoring Required' :
-                       'Immediate Action Needed'}
+                      {report.gaugeValue >= 85 ? 'Optimal Performance' : report.gaugeValue >= 70 ? 'Monitoring Required' : 'Immediate Action Needed'}
                     </h4>
                     <p className="text-gray-700 leading-relaxed">{report.verdict}</p>
                   </div>
@@ -667,24 +676,24 @@ const BatteryReport: React.FC = () => {
                 <div className="bg-white/85 backdrop-blur-md rounded-xl p-4 border border-gray-200 shadow-lg text-center">
                   <div className="flex items-center justify-center text-gray-800">
                     <Lock size={16} className="mr-2" />
-                    <span className="text-sm font-semibold">Get the AI-generated report</span>
+                    <span className="text-sm font-semibold">AI-generated verdict available</span>
                   </div>
-                  <button
+                  <Link
+                    to={`/report/${deviceId}/ai`}
                     className="mt-2 inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-semibold py-2 px-3 transition-colors"
-                    type="button"
                   >
                     <Lock size={14} />
-                    Unlock AI-powered report
-                  </button>
-                  <p className="mt-1 text-xs text-gray-600">Professional ML models analyze your data</p>
+                    Generate AI Report
+                  </Link>
+                  <p className="mt-1 text-xs text-gray-600">Paywall will be added later</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Action Items */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
+  {/* Action Items (paywalled) */}
+  <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-100" data-paywall-section>
           <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
             <Clock className="mr-2 text-purple-600" size={20} />
             Recommended Actions
@@ -720,19 +729,23 @@ const BatteryReport: React.FC = () => {
               <div className="bg-white/85 backdrop-blur-md rounded-xl p-4 border border-gray-200 shadow-lg text-center">
                 <div className="flex items-center justify-center text-gray-800">
                   <Lock size={16} className="mr-2" />
-                  <span className="text-sm font-semibold">Get the AI-generated report</span>
+                  <span className="text-sm font-semibold">AI-generated actions available</span>
                 </div>
-                <button
+                <Link
+                  to={`/report/${deviceId}/ai`}
                   className="mt-2 inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white text-sm font-semibold py-2 px-3 transition-colors"
-                  type="button"
                 >
                   <Lock size={14} />
-                  Unlock AI-powered report
-                </button>
-                <p className="mt-1 text-xs text-gray-600">Professional ML models analyze your data</p>
+                  Generate AI Report
+                </Link>
+                <p className="mt-1 text-xs text-gray-600">Paywall will be added later</p>
               </div>
             </div>
           </div>
+        </div>
+        {/* Placeholder note shown only in exported PDF */}
+        <div data-paywall-placeholder className="hidden mt-8 text-center text-xs italic text-gray-500">
+          Premium AI analysis, verdict and action plan are omitted in this preview export. Generate the AI Report for full PDF content.
         </div>
       </div>
     </div>

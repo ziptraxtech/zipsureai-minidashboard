@@ -22,3 +22,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .vercel
+
+# Python / virtual environments (prevent huge binaries from being committed)
+.venv/
+venv/
+__pycache__/
+*.pyc
+backend/__pycache__/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/

@@ -1,51 +1,89 @@
-<<<<<<< HEAD
-# ZipsureA1
-Zipsure Mini Dashboard
-=======
-# Getting Started with Create React App
+# ZipSureAI Mini Dashboard
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Battery performance and anomaly interpretation dashboard.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+* Device battery performance report views with PDF export.
+* Paywalled preview (blur) for AI-generated technical analysis, verdict, and recommended actions.
+* Unlock flow calls backend FastAPI service for up-to-date anomaly interpretation.
+* SVG SOH dial and performance/trend charts (Recharts).
 
-### `npm start`
+## Architecture Overview
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+```
+frontend/ (Create React App + TypeScript)
+	src/components/BatteryReport.tsx  <-- integrates API unlock
+backend/ (FastAPI service)
+	app/pipeline.py       synthetic data + anomaly detection heuristics
+	app/interpretation.py severity → human-readable interpretation
+	app/main.py           REST endpoints (/health, /verdicts, /devices/{id}, /refresh)
+	requirements.txt      backend Python dependencies
+```
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## Backend Setup
 
-### `npm test`
+Python 3.10+ recommended.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r backend/requirements.txt
+```
 
-### `npm run build`
+Run the API:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+uvicorn backend.app.main:app --reload --port 8001
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Or via npm script (still requires Python env prepared):
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+npm run api
+```
 
-### `npm run eject`
+### Key Endpoints
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+* `GET /health` – service status.
+* `POST /refresh` – re-run pipeline (regenerates anomaly outputs).
+* `GET /verdicts` – fleet summary + interpreted devices.
+* `GET /devices/{device_id}` – single device interpretation (device5 … device8 by default).
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Frontend Setup
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+Install dependencies and start dev server:
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+```bash
+npm install
+npm start
+```
 
-## Learn More
+Optionally set environment variable to point frontend at deployed backend:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+export REACT_APP_API_BASE=http://localhost:8001
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
->>>>>>> 9dd18bf (Initial commit: ZipSureAI React Dashboard with Tailwind CSS)
+## Unlock Flow
+
+`BatteryReport.tsx` prefetches device interpretation and reveals it when user clicks Unlock. Blurred preview remains until `unlocked` state flips true. PDF export temporarily removes blur overlays for a clean document.
+
+## Pipeline Notes
+
+The current pipeline uses synthetic data generation (`fetch_device_data`) as placeholder. Replace with real API calls to `SOURCE_API_BASE` and adapt cleaning/anomaly logic to production dataset. Severity mapping is heuristic and should be calibrated with domain experts.
+
+## Future Enhancements
+
+* Authentication + real paywall enforcement.
+* Scheduled pipeline run (cron / serverless) and caching.
+* Autoencoder / IsolationForest integration for richer anomaly scoring.
+* Multi-device comparative trend charts fed from backend JSON.
+* Error boundary + retry UI for API failures.
+
+## License
+
+Proprietary – internal use only (adjust as needed).
+
+---
+Generated README replacing merge conflict boilerplate for clarity.
