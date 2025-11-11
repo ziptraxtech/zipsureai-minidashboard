@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Zap, Bolt, Play, CheckCircle, ArrowRight, Microscope, Cpu, Flame, Thermometer, Battery } from 'lucide-react';
+import { Zap, Bolt, Play, CheckCircle, Microscope, Cpu, Battery } from 'lucide-react';
 
 const SectionLink: React.FC<{ href: string; label: string; active?: boolean }> = ({ href, label, active }) => (
   <a

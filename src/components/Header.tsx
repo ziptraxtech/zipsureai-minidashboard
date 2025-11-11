@@ -49,7 +49,7 @@ const Header: React.FC = () => {
               {/* top highlight */}
               <span className="pointer-events-none absolute -inset-px rounded-xl bg-gradient-to-b from-white/30 to-transparent opacity-60"></span>
               {/* sheen sweep */}
-              <span className="pointer-events-none absolute -left-8 top-0 h-full w-8 rotate-12 bg-white/30 blur-sm opacity-0 group-hover:opacity-60 animate-[shine_1.2s_ease-in-out]" />
+              <span className="pointer-events-none absolute -left-8 top-0 h-full w-8 rotate-12 bg-white/30 blur-sm opacity-0 group-hover:opacity-60 animate-shine" />
               <Bolt size={16} className="relative z-10" />
               <span className="relative z-10">Quick Test</span>
             </Link>
