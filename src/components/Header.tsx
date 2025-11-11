@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Zap, Settings, Bell, MoreVertical } from 'lucide-react';
+import { Zap, Settings, Bell, MoreVertical, Bolt } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Header: React.FC = () => {
@@ -35,6 +35,9 @@ const Header: React.FC = () => {
             <a href="#settings" className="text-white/90 hover:text-white transition-colors duration-200 font-medium">
               Settings
             </a>
+            <Link to="/zeflash" className="inline-flex items-center gap-1.5 text-sm font-semibold rounded-lg px-3 py-2 bg-white/15 hover:bg-white/25 text-white shadow-inner border border-white/20 transition-colors">
+              <Bolt size={16} /> Quick Test
+            </Link>
           </nav>
 
           {/* Status Indicators */}
@@ -126,6 +129,13 @@ const Header: React.FC = () => {
                 >
                   Settings
                 </a>
+                <Link
+                  to="/zeflash"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-3 text-white/90 hover:bg-white/10 hover:text-white transition-colors flex items-center gap-2"
+                >
+                  <Bolt size={16} /> Quick Test
+                </Link>
               </div>
             </div>
           )}
