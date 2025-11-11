@@ -1,22 +1,61 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Zap, Bolt, Play, CheckCircle, ArrowRight, Microscope, Cpu, Flame, Thermometer, Battery } from 'lucide-react';
 
-const SectionLink: React.FC<{ href: string; label: string }> = ({ href, label }) => (
-  <a href={href} className="px-3 py-1.5 rounded-md text-sm text-gray-700 hover:text-blue-700 hover:bg-blue-50 font-medium">
+const SectionLink: React.FC<{ href: string; label: string; active?: boolean }> = ({ href, label, active }) => (
+  <a
+    href={href}
+    aria-current={active ? 'page' : undefined}
+    className={
+      `px-3 py-1.5 rounded-md text-sm font-medium transition-colors ` +
+      (active
+        ? 'bg-blue-600 text-white shadow-sm'
+        : 'text-gray-700 hover:text-blue-700 hover:bg-blue-50')
+    }
+  >
     {label}
   </a>
 );
 
 const ZeflashLanding: React.FC = () => {
   const topRef = useRef<HTMLDivElement | null>(null);
+  const [activeSection, setActiveSection] = useState<string>('');
+
+  useEffect(() => {
+    const sectionIds = ['what', 'features', 'how', 'science', 'who', 'why'];
+    let ticking = false;
+
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          let current = '';
+          for (const id of sectionIds) {
+            const el = document.getElementById(id);
+            if (!el) continue;
+            const rect = el.getBoundingClientRect();
+            if (rect.top <= 120 && rect.bottom >= 120) {
+              current = id;
+              break;
+            }
+          }
+          setActiveSection(current || 'what');
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50/50 text-gray-900">
       {/* Top bar */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-200">
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-600">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 shadow-md shadow-blue-200/40">
               <Zap className="text-white" size={20} />
             </div>
             <div className="leading-tight">
@@ -25,15 +64,15 @@ const ZeflashLanding: React.FC = () => {
             </div>
           </div>
           <nav className="hidden md:flex items-center gap-1">
-            <SectionLink href="#what" label="What" />
-            <SectionLink href="#features" label="Features" />
-            <SectionLink href="#how" label="How it works" />
-            <SectionLink href="#science" label="Science" />
-            <SectionLink href="#who" label="Who it’s for" />
-            <SectionLink href="#why" label="Why Zeflash" />
+            <SectionLink href="#what" label="What" active={activeSection==='what'} />
+            <SectionLink href="#features" label="Features" active={activeSection==='features'} />
+            <SectionLink href="#how" label="How it works" active={activeSection==='how'} />
+            <SectionLink href="#science" label="Science" active={activeSection==='science'} />
+            <SectionLink href="#who" label="Who it’s for" active={activeSection==='who'} />
+            <SectionLink href="#why" label="Why Zeflash" active={activeSection==='why'} />
           </nav>
           <div className="flex items-center gap-2">
-            <a href="#book" className="inline-flex items-center gap-2 rounded-lg bg-blue-600 text-white text-sm font-semibold px-3 py-2 hover:bg-blue-700">
+            <a href="#book" className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold px-3 py-2 hover:from-cyan-600 hover:to-blue-700 shadow-md shadow-blue-200/40">
               <Bolt size={16} /> Quick Test
             </a>
             <Link to={"/"} className="hidden sm:inline-flex items-center gap-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium px-3 py-2 hover:bg-gray-50">
@@ -44,7 +83,10 @@ const ZeflashLanding: React.FC = () => {
       </header>
 
       {/* Hero */}
-      <section ref={topRef} className="relative">
+      <section ref={topRef} className="relative overflow-hidden">
+        {/* Decorative Background */}
+        <div className="pointer-events-none absolute -top-20 -right-24 w-80 h-80 bg-gradient-to-tr from-cyan-400/30 to-blue-500/30 blur-3xl rounded-full" />
+        <div className="pointer-events-none absolute -bottom-24 -left-24 w-96 h-96 bg-gradient-to-tr from-emerald-300/25 to-cyan-400/25 blur-3xl rounded-full" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
@@ -59,26 +101,26 @@ const ZeflashLanding: React.FC = () => {
                 Zeflash combines flash-based EV testing at Fast Chargers with ZipsureAI’s battery physics-driven AI Deeptech to decode your EV’s true performance, aging, and safety condition on the spot.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
-                <a href="#book" className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 text-white font-semibold px-4 py-2.5 hover:bg-emerald-700">
+                <a href="#book" className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold px-4 py-2.5 hover:from-emerald-600 hover:to-teal-700 shadow-lg shadow-emerald-200/30">
                   <CheckCircle size={18} /> Book a Zeflash RapidTest
                 </a>
-                <a href="#demo" className="inline-flex items-center gap-2 rounded-lg bg-white border border-gray-300 text-gray-800 font-medium px-4 py-2.5 hover:bg-gray-50">
+                <a href="#demo" className="inline-flex items-center gap-2 rounded-lg bg-white border border-gray-300 text-gray-800 font-medium px-4 py-2.5 hover:bg-gray-50 shadow-sm">
                   <Play size={18} /> Request a Free Demo
                 </a>
               </div>
             </div>
             <div className="relative">
-              <div className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
+              <div className="rounded-2xl border border-blue-100 bg-white p-6 shadow-xl shadow-blue-100/50">
                 <div className="grid grid-cols-2 gap-4 text-center">
-                  <div className="p-4 rounded-xl bg-blue-50 border border-blue-100">
+                  <div className="p-4 rounded-xl bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors">
                     <div className="text-xs text-blue-700 font-semibold">Instant Health Report</div>
                     <div className="text-3xl font-extrabold text-blue-700 mt-1">15 min</div>
                   </div>
-                  <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+                  <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors">
                     <div className="text-xs text-emerald-700 font-semibold">Accuracy</div>
                     <div className="text-3xl font-extrabold text-emerald-700 mt-1">90%+</div>
                   </div>
-                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-100 col-span-2">
+                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-100 col-span-2 hover:bg-amber-100 transition-colors">
                     <div className="text-xs text-amber-700 font-semibold">Outputs</div>
                     <div className="mt-2 text-sm text-amber-800">SoP, SoF, Efficiency variance, range loss estimates, and expert recommendations.</div>
                   </div>
@@ -105,27 +147,27 @@ const ZeflashLanding: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <h2 className="text-2xl sm:text-3xl font-bold mb-6">Core Features</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            <div className="rounded-xl border border-gray-200 bg-white p-6">
+            <div className="rounded-xl border border-gray-200 bg-white p-6 transition-all hover:shadow-lg hover:-translate-y-0.5">
               <div className="flex items-center gap-2 text-blue-700 font-semibold"><Bolt size={18} /> Rapid Flash Testing</div>
               <p className="mt-2 text-gray-700">Get real-time diagnostic scans that capture your battery’s true energy output and internal efficiency — all within minutes.</p>
             </div>
-            <div className="rounded-xl border border-gray-200 bg-white p-6">
+            <div className="rounded-xl border border-gray-200 bg-white p-6 transition-all hover:shadow-lg hover:-translate-y-0.5">
               <div className="flex items-center gap-2 text-blue-700 font-semibold"><ActivityIcon /> Multi-Signal Scanning</div>
               <p className="mt-2 text-gray-700">Go beyond surface readings. Integrates current signals, temperature, impedance and multiple parameters to detect early degradation and unsafe charging.</p>
             </div>
-            <div className="rounded-xl border border-gray-200 bg-white p-6">
+            <div className="rounded-xl border border-gray-200 bg-white p-6 transition-all hover:shadow-lg hover:-translate-y-0.5">
               <div className="flex items-center gap-2 text-blue-700 font-semibold"><Cpu size={18} /> AI + Digital Twin Intelligence</div>
               <p className="mt-2 text-gray-700">Physics-based machine learning predicts lifespan, efficiency, and early failure trends with high precision.</p>
             </div>
-            <div className="rounded-xl border border-gray-200 bg-white p-6">
+            <div className="rounded-xl border border-gray-200 bg-white p-6 transition-all hover:shadow-lg hover:-translate-y-0.5">
               <div className="flex items-center gap-2 text-blue-700 font-semibold"><Battery size={18} /> Portable Analysis at EV Chargers</div>
               <p className="mt-2 text-gray-700">Compact, rugged, and easy to use — brings lab-grade diagnostics to the charging station.</p>
             </div>
-            <div className="rounded-xl border border-gray-200 bg-white p-6">
+            <div className="rounded-xl border border-gray-200 bg-white p-6 transition-all hover:shadow-lg hover:-translate-y-0.5">
               <div className="flex items-center gap-2 text-blue-700 font-semibold"><Microscope size={18} /> Benchmark & Traceability</div>
               <p className="mt-2 text-gray-700">Benchmarks across chemistries and manufacturers to enable consistent, traceable results for certification and resale.</p>
             </div>
-            <div className="rounded-xl border border-gray-200 bg-white p-6">
+            <div className="rounded-xl border border-gray-200 bg-white p-6 transition-all hover:shadow-lg hover:-translate-y-0.5">
               <div className="flex items-center gap-2 text-blue-700 font-semibold"><FileIcon /> Instant Health Report</div>
               <p className="mt-2 text-gray-700">Clear, visual reports including SoP, SoF, Accuracy %, Efficiency variance, range loss estimate, and recommendations.</p>
             </div>
@@ -207,6 +249,16 @@ const ZeflashLanding: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Bottom mobile CTA */}
+      <div className="fixed bottom-3 inset-x-0 px-3 sm:px-6 z-40 md:hidden pointer-events-none">
+        <div className="pointer-events-auto mx-auto max-w-2xl rounded-2xl border border-blue-100 bg-white/95 backdrop-blur shadow-lg p-3 flex items-center justify-between">
+          <div className="text-sm font-semibold text-gray-800">Start a Quick Zeflash Test</div>
+          <a href="#book" className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold px-3 py-2">
+            <Bolt size={16} /> Quick Test
+          </a>
+        </div>
+      </div>
 
       <footer className="py-8 border-t border-gray-200 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center text-sm text-gray-600">

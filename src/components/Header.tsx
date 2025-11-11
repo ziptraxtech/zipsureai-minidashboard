@@ -35,8 +35,23 @@ const Header: React.FC = () => {
             <a href="#settings" className="text-white/90 hover:text-white transition-colors duration-200 font-medium">
               Settings
             </a>
-            <Link to="/zeflash" className="inline-flex items-center gap-1.5 text-sm font-semibold rounded-lg px-3 py-2 bg-white/15 hover:bg-white/25 text-white shadow-inner border border-white/20 transition-colors">
-              <Bolt size={16} /> Quick Test
+            <Link
+              to="/zeflash"
+              className="relative inline-flex items-center gap-1.5 text-sm font-semibold rounded-xl px-4 py-2
+                bg-gradient-to-r from-cyan-400 to-blue-600 text-white
+                shadow-[0_8px_20px_rgba(16,97,218,0.35)] border border-white/10
+                transition-all duration-300 will-change-transform
+                hover:from-cyan-300 hover:to-blue-500 hover:-translate-y-0.5 active:translate-y-0
+                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-blue-700/30 focus:ring-cyan-300/60"
+            >
+              {/* subtle inner glow */}
+              <span className="absolute inset-0 rounded-xl bg-white/10 opacity-0 hover:opacity-100 transition-opacity"></span>
+              {/* top highlight */}
+              <span className="pointer-events-none absolute -inset-px rounded-xl bg-gradient-to-b from-white/30 to-transparent opacity-60"></span>
+              {/* sheen sweep */}
+              <span className="pointer-events-none absolute -left-8 top-0 h-full w-8 rotate-12 bg-white/30 blur-sm opacity-0 group-hover:opacity-60 animate-[shine_1.2s_ease-in-out]" />
+              <Bolt size={16} className="relative z-10" />
+              <span className="relative z-10">Quick Test</span>
             </Link>
           </nav>
 
