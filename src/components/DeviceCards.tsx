@@ -347,12 +347,6 @@ const DeviceCards: React.FC = () => {
               </div>
               {device.chargerUrl && (
                 <div className="mt-3 text-xs">
-                  <p className="text-gray-500">Charger URL</p>
-                  <p className="font-mono text-gray-700 break-all">{device.chargerUrl}</p>
-                </div>
-              )}
-              {device.chargerUrl && (
-                <div className="mt-3 text-xs">
                   <p className="text-gray-500 mb-1">Live Log</p>
                   <div className="rounded-lg border border-gray-200 bg-gray-50 p-2 space-y-1 max-h-24 overflow-auto">
                     {(deviceLogs[device.id] || ['No events yet']).map((logLine, index) => (
