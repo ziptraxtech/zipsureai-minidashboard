@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { MapPin, BarChart3, Clock, AlertTriangle } from 'lucide-react';
 
 interface Device {
@@ -16,15 +15,16 @@ interface Device {
 type DeviceEventLogs = Record<number, string[]>;
 
 const DeviceCards: React.FC = () => {
+  const reportBaseUrl = 'https://zipsureai-rag.vercel.app/dashboard?device=';
   const initialDevices: Device[] = useMemo(() => [
     {
       id: 1,
       name: 'Device 1',
       location: 'Andheria More',
-      health: null,
-      status: 'offline',
-      lastUpdate: 'Offline',
-      reportAvailable: false
+      health: 85,
+      status: 'good',
+      lastUpdate: '3 min ago',
+      reportAvailable: true
     },
     {
       id: 2,
@@ -48,19 +48,19 @@ const DeviceCards: React.FC = () => {
       id: 4,
       name: 'Device 4',
       location: 'TB Hospital',
-      health: null,
-      status: 'offline',
-      lastUpdate: 'Offline',
-      reportAvailable: false
+      health: 89,
+      status: 'excellent',
+      lastUpdate: '1 min ago',
+      reportAvailable: true
     },
     {
       id: 5,
       name: 'Device 5',
       location: 'Hauz Khas Metro Station',
-      health: null,
-      status: 'offline',
-      lastUpdate: 'Offline',
-      reportAvailable: true // Offline report available
+      health: 80,
+      status: 'good',
+      lastUpdate: '2 min ago',
+      reportAvailable: true
     },
     {
       id: 6,
@@ -84,20 +84,19 @@ const DeviceCards: React.FC = () => {
       id: 8,
       name: 'Device 8',
       location: 'Pascheel Park',
-      health: 87,
-      status: 'good',
-      lastUpdate: '1 min ago',
-      reportAvailable: true
-    },
-    {
-      id: 9,
-      name: 'ACS ZIPBOLT CHARGER',
-      location: 'Charjkaro OCPP Gateway',
-      chargerUrl: 'ws://ocpp.charjkaro.in:80/ws/ZIPL_AIDCT67_2G_01',
       health: null,
       status: 'offline',
       lastUpdate: 'Offline',
       reportAvailable: false
+    },
+    {
+      id: 9,
+      name: 'Device 9',
+      location: 'Sapna Cinema Zipbolt',
+      health: 91,
+      status: 'excellent',
+      lastUpdate: '1 min ago',
+      reportAvailable: true
     }
   ], []);
 
@@ -359,8 +358,10 @@ const DeviceCards: React.FC = () => {
               )}
             </div>
             {device.reportAvailable ? (
-              <Link 
-                to={`/report/${device.id}`}
+              <a 
+                href={`${reportBaseUrl}${device.id + 1}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className={`w-full inline-block text-center ${getButtonStyle(device.status)}`}
               >
                 {device.status === 'critical' ? (
@@ -374,7 +375,7 @@ const DeviceCards: React.FC = () => {
                     View Report
                   </>
                 )}
-              </Link>
+              </a>
             ) : (
               <button className={`w-full inline-block text-center ${getButtonStyle(device.status)}`}>
                 <Clock className="inline mr-2" size={16} />
